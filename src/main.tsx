@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Activity,
@@ -20,6 +20,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import './styles.css';
+import { askPublicBot, config, publicUrl, track } from './runtime';
 
 type Message = { from: 'user' | 'bot'; text: string };
 
@@ -74,21 +75,21 @@ const publicLinks = [
     tag: 'CONFIRMACIÓN',
     copy: 'Pantalla pública para confirmar asistencia, validar datos del responsable y dejar trazabilidad.',
     detail: 'Lola · Control postquirúrgico · Dra. Aguirre · 09:30',
-    href: 'https://backoffice.diceprojects.com/public/dicehealth/appointments/dicehealth-demo-confirmar-lola',
+    href: publicUrl(config.confirmPath),
   },
   {
     title: 'Reconfirmar estudio',
     tag: 'EQUIPO MÉDICO',
     copy: 'Vista para reconfirmar un estudio con preparación previa, sede, equipo asignado e instrucciones.',
     detail: 'Simba · Ecógrafo Doppler · Hospital Norte · 10:30',
-    href: 'https://backoffice.diceprojects.com/public/dicehealth/studies/dicehealth-demo-ecografia-simba',
+    href: publicUrl(config.studyPath),
   },
   {
     title: 'Indicaciones y vacunas',
     tag: 'SEGUIMIENTO',
     copy: 'Link de seguimiento clínico con recomendaciones, medicación indicada y próximas vacunas.',
     detail: 'Milo · Cardiología · vacunas y medicación pendiente',
-    href: 'https://backoffice.diceprojects.com/public/dicehealth/follow-up/dicehealth-demo-milo-cardio',
+    href: publicUrl(config.followUpPath),
   },
 ] as const;
 
@@ -134,7 +135,13 @@ function Copilot() {
   const prompts = ['¿Cómo manejo tutores y pacientes?', '¿Qué mide el scoring?', '¿Cómo funciona la agenda clínica?'];
   const send = (text: string) => {
     if (!text.trim()) return;
+    track('BOT_QUESTION', { actionCode: 'dicehealth_public_copilot_question', actionLabel: text.slice(0, 120), category: 'COPILOT' });
     setMessages((current) => [...current, { from: 'user', text }, { from: 'bot', text: askCopilot(text) }]);
+    void askPublicBot(text).then((remoteAnswer) => {
+      if (remoteAnswer) {
+        setMessages((current) => [...current.slice(0, -1), { from: 'bot', text: remoteAnswer }]);
+      }
+    });
     setInput('');
     setOpen(true);
   };
@@ -159,18 +166,21 @@ function App() {
     occupancy: '26%',
     admin: '14 hs',
   }), []);
+  useEffect(() => {
+    track('VIEW', { actionCode: 'dicehealth_page_home', actionLabel: 'DiceHealth landing', category: 'NAVIGATION' });
+  }, []);
   return (
     <main>
       <nav className="nav">
         <a className="brand" href="#inicio"><span className="brand-mark" /><span><strong>DiceHealth</strong><small>Gestión clínica</small></span></a>
-        <div><a href="#modulos">Módulos</a><a href="#core">Core</a><a href="#dashboard">Dashboard</a><a href="#links">Links</a><a href="#demo">Demo</a></div>
+        <div><a data-mkt="dicehealth_nav_modules" href="#modulos">Módulos</a><a data-mkt="dicehealth_nav_core" href="#core">Core</a><a data-mkt="dicehealth_nav_dashboard" href="#dashboard">Dashboard</a><a data-mkt="dicehealth_nav_links" href="#links">Links</a><a data-mkt="dicehealth_nav_demo" href="#demo">Demo</a></div>
       </nav>
       <section id="inicio" className="hero">
         <div className="hero-copy">
           <p className="eyebrow">PLATAFORMA CLÍNICA · DICEPROJECTS CORE</p>
           <h1>La Plataforma de Gestión Clínica para instituciones de salud.</h1>
           <p>Centralizá pacientes, agenda, historia clínica, tratamientos, expedientes y seguimiento clínico desde una única plataforma con IA, automatizaciones e integración completa.</p>
-          <div className="actions"><a className="button primary" href="#demo">Ver demo <ArrowRight size={18} /></a><a className="button secondary" href="#modulos">Ver módulos</a></div>
+          <div className="actions"><a className="button primary" href="#demo" onClick={() => track('CLICK', { actionCode: 'dicehealth_cta_demo', actionLabel: 'Ver demo', category: 'CTA' })}>Ver demo <ArrowRight size={18} /></a><a className="button secondary" href="#modulos" onClick={() => track('CLICK', { actionCode: 'dicehealth_cta_modules', actionLabel: 'Ver módulos', category: 'CTA' })}>Ver módulos</a></div>
         </div>
         <div className="clinical-board">
           <div className="board-head"><Stethoscope /><span>Agenda clínica</span><b>Hoy</b></div>
@@ -225,7 +235,7 @@ function App() {
         </div>
         <div className="link-grid">
           {publicLinks.map((item) => (
-            <a className="public-card" href={item.href} target="_blank" rel="noreferrer" key={item.title}>
+            <a className="public-card" href={item.href} target="_blank" rel="noreferrer" key={item.title} onClick={() => track(item.tag === 'EQUIPO MÉDICO' ? 'CLICK' : 'APPOINTMENT_VIEW', { actionCode: `dicehealth_public_link_${item.tag.toLowerCase().replace(/\s+/g, '_')}`, actionLabel: item.title, category: 'PUBLIC_LINK', entityType: item.tag === 'EQUIPO MÉDICO' ? 'SERVICE' : 'APPOINTMENT', metadata: { href: item.href, detail: item.detail } })}>
               <span className="link-top"><small>{item.tag}</small><ExternalLink size={18} /></span>
               <strong>{item.title}</strong>
               <p>{item.copy}</p>
