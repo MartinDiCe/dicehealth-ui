@@ -161,7 +161,6 @@ function Copilot() {
 }
 
 function AppointmentDemo() {
-  const [careMode, setCareMode] = useState<'veterinary' | 'human'>('veterinary');
   const [slots, setSlots] = useState<DemoAppointmentSlot[]>([]);
   const [selectedSlotId, setSelectedSlotId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -175,29 +174,7 @@ function AppointmentDemo() {
     animalSpecies: 'Perro',
     reason: 'Consulta clínica',
   });
-  const modeCopy = careMode === 'veterinary'
-    ? {
-        eyebrow: 'Demo veterinaria',
-        responsable: 'Tutor responsable',
-        patient: 'Animal / paciente',
-        species: ['Perro', 'Gato', 'Conejo', 'Ave', 'Exótico'],
-        note: 'El tutor queda como contacto y el animal viaja como paciente clínico.',
-      }
-    : {
-        eyebrow: 'Demo salud humana',
-        responsable: 'Responsable / paciente',
-        patient: 'Paciente',
-        species: ['Adulto', 'Menor', 'Control', 'Primera vez', 'Estudio'],
-        note: 'El responsable queda como contacto y el paciente viaja en la reserva clínica.',
-      };
-
-  useEffect(() => {
-    setForm((current) => ({
-      ...current,
-      animalSpecies: careMode === 'veterinary' ? 'Perro' : 'Adulto',
-      reason: careMode === 'veterinary' ? 'Consulta clínica' : 'Consulta médica',
-    }));
-  }, [careMode]);
+  const species = ['Perro', 'Gato', 'Conejo', 'Ave', 'Exótico'];
 
   useEffect(() => {
     let alive = true;
@@ -226,8 +203,7 @@ function AppointmentDemo() {
     const result = await requestDemoAppointment({
       slot: selectedSlot,
       ...form,
-      animalSpecies: careMode === 'veterinary' ? form.animalSpecies : `Humana · ${form.animalSpecies}`,
-      reason: `${careMode === 'veterinary' ? 'Veterinaria' : 'Salud humana'} · ${form.reason}`,
+      reason: `Veterinaria · ${form.reason}`,
     });
     setStatus(result.message);
     setSubmitting(false);
@@ -236,16 +212,12 @@ function AppointmentDemo() {
   return (
     <section id="demo" className="section lead">
       <div className="lead-sidebar">
-        <p className="eyebrow">{modeCopy.eyebrow}</p>
+        <p className="eyebrow">Demo veterinaria</p>
         <h2>Reservar un turno.</h2>
-        <p>{modeCopy.note}</p>
-        <div className="mode-switch" aria-label="Tipo de entidad">
-          <button className={careMode === 'veterinary' ? 'active' : ''} type="button" onClick={() => setCareMode('veterinary')}>Animal</button>
-          <button className={careMode === 'human' ? 'active' : ''} type="button" onClick={() => setCareMode('human')}>Humana</button>
-        </div>
+        <p>El tutor queda como contacto y el animal viaja como paciente clínico.</p>
         <ol className="booking-steps">
           <li><b>1</b><span>Elegí un horario futuro.</span></li>
-          <li><b>2</b><span>Cargá responsable y paciente.</span></li>
+          <li><b>2</b><span>Cargá tutor y animal.</span></li>
           <li><b>3</b><span>La reserva llega a Agenda.</span></li>
         </ol>
       </div>
@@ -278,13 +250,13 @@ function AppointmentDemo() {
             <small>{selectedSlot.serviceName} · {selectedSlot.resourceName}</small>
           </div>
         )}
-        <input value={form.tutorName} onChange={update('tutorName')} placeholder={modeCopy.responsable} autoComplete="name" />
+        <input value={form.tutorName} onChange={update('tutorName')} placeholder="Tutor responsable" autoComplete="name" />
         <input value={form.tutorEmail} onChange={update('tutorEmail')} placeholder="Email de contacto" type="email" autoComplete="email" />
         <input value={form.tutorPhone} onChange={update('tutorPhone')} placeholder="Teléfono" autoComplete="tel" />
         <div className="form-grid">
-          <input value={form.animalName} onChange={update('animalName')} placeholder={modeCopy.patient} />
+          <input value={form.animalName} onChange={update('animalName')} placeholder="Animal / paciente" />
           <select value={form.animalSpecies} onChange={update('animalSpecies')} aria-label="Especie">
-            {modeCopy.species.map((item) => <option key={item}>{item}</option>)}
+            {species.map((item) => <option key={item}>{item}</option>)}
           </select>
         </div>
         <textarea value={form.reason} onChange={update('reason')} placeholder="Motivo de consulta" />
