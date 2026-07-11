@@ -114,9 +114,20 @@ h3 { font-size: 20px; }
 .demo-panel p:first-of-type { border-top: 0; }
 .demo-panel b { color: var(--accent); }
 .demo-panel em { border-radius: 999px; background: #e7fbf7; color: #087b70; padding: 7px 9px; font-size: 11px; font-style: normal; font-weight: 900; white-space: nowrap; }
+.appointment-panel { display: grid; gap: 10px; }
+.appointment-panel h3 { margin-bottom: 6px; }
+.appointment-slot { width: 100%; display: grid; grid-template-columns: 92px 1fr auto; gap: 12px; align-items: center; border: 1px solid #e1eceb; border-radius: 10px; background: #fff; padding: 13px; text-align: left; cursor: pointer; }
+.appointment-slot.active { border-color: var(--accent); background: #effcf9; box-shadow: inset 4px 0 0 var(--accent); }
+.appointment-slot b { color: var(--dark); font-size: 13px; line-height: 1.25; text-transform: capitalize; }
+.appointment-slot span { color: var(--dark); font-weight: 950; line-height: 1.25; }
+.appointment-slot small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 800; }
+.plain-row { display: block !important; color: var(--muted) !important; padding: 10px 0 !important; border: 0 !important; }
 .lead form { padding: 28px; display: grid; gap: 12px; }
-.lead input, .lead textarea { border: 1px solid #cbdcdd; border-radius: 10px; padding: 15px 16px; background: #fff; outline-color: var(--accent); }
+.lead input, .lead textarea, .lead select { width: 100%; border: 1px solid #cbdcdd; border-radius: 10px; padding: 15px 16px; background: #fff; outline-color: var(--accent); }
 .lead textarea { min-height: 130px; resize: vertical; }
+.form-grid { display: grid; grid-template-columns: 1fr 132px; gap: 12px; }
+.form-status { margin: 0; color: #087b70 !important; font-size: 14px !important; font-weight: 900; }
+.lead button:disabled { opacity: .68; cursor: wait; }
 footer { background: var(--dark); color: #dbe8ea; padding: 38px clamp(18px, 6vw, 90px); font-weight: 800; }
 
 .copilot-pill { position: fixed; right: 28px; bottom: 28px; z-index: 30; display: inline-flex; align-items: center; gap: 10px; border: 0; background: var(--dark); color: #fff; border-radius: 999px; padding: 16px 22px; font-weight: 950; box-shadow: 0 18px 40px rgba(0,0,0,.24); cursor: pointer; }
@@ -141,5 +152,5 @@ footer { background: var(--dark); color: #dbe8ea; padding: 38px clamp(18px, 6vw,
   .hero { padding-top: 54px; }
   h1 { font-size: 38px; }
   .kpis, .cards, .verticals, .metrics, .flows > div:last-child, .kb-list, .link-grid { grid-template-columns: 1fr; }
-  .slot, .demo-panel p { grid-template-columns: 1fr; }
+  .slot, .demo-panel p, .appointment-slot, .form-grid { grid-template-columns: 1fr; }
 }

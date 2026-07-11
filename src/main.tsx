@@ -20,7 +20,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import './styles.css';
-import { askPublicBot, config, publicUrl, track } from './runtime';
+import { askPublicBot, config, type DemoAppointmentSlot, fetchDemoAppointmentSlots, publicUrl, requestDemoAppointment, track } from './runtime';
 
 type Message = { from: 'user' | 'bot'; text: string };
 
@@ -160,6 +160,105 @@ function Copilot() {
   );
 }
 
+function AppointmentDemo() {
+  const [slots, setSlots] = useState<DemoAppointmentSlot[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState('');
+  const [form, setForm] = useState({
+    tutorName: '',
+    tutorEmail: '',
+    tutorPhone: '',
+    animalName: '',
+    animalSpecies: 'Perro',
+    reason: 'Consulta clínica',
+  });
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    fetchDemoAppointmentSlots()
+      .then((next) => {
+        if (!alive) return;
+        setSlots(next);
+        setSelectedSlotId(next[0]?.id ?? '');
+      })
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, []);
+
+  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId);
+  const update = (field: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+  };
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedSlot || !form.tutorName.trim() || !form.tutorEmail.trim() || !form.animalName.trim()) {
+      setStatus('Completá tutor, email, paciente y turno.');
+      return;
+    }
+    setSubmitting(true);
+    const result = await requestDemoAppointment({ slot: selectedSlot, ...form });
+    setStatus(result.message);
+    setSubmitting(false);
+  };
+
+  return (
+    <section id="demo" className="section lead">
+      <div>
+        <p className="eyebrow">Demo veterinaria</p>
+        <h2>Turnos futuros para probar el flujo.</h2>
+        <p>El tutor queda como contacto de la reserva y el animal viaja en metadata clínica para completar el paciente en Salud.</p>
+      </div>
+      <div className="demo-panel appointment-panel">
+        <h3>Disponibilidad</h3>
+        {loading && <p className="plain-row">Cargando agenda...</p>}
+        {!loading && slots.map((slot) => (
+          <button
+            className={slot.id === selectedSlotId ? 'appointment-slot active' : 'appointment-slot'}
+            key={slot.id}
+            type="button"
+            onClick={() => setSelectedSlotId(slot.id)}
+          >
+            <b>{formatSlotDate(slot.startsAt)}</b>
+            <span>{slot.serviceName}<small>{slot.resourceName}</small></span>
+            <em>{slot.source === 'api' ? 'SALUD' : 'Demo'}</em>
+          </button>
+        ))}
+      </div>
+      <form onSubmit={submit}>
+        <input value={form.tutorName} onChange={update('tutorName')} placeholder="Tutor responsable" autoComplete="name" />
+        <input value={form.tutorEmail} onChange={update('tutorEmail')} placeholder="Email del tutor" type="email" autoComplete="email" />
+        <input value={form.tutorPhone} onChange={update('tutorPhone')} placeholder="Teléfono" autoComplete="tel" />
+        <div className="form-grid">
+          <input value={form.animalName} onChange={update('animalName')} placeholder="Paciente / animal" />
+          <select value={form.animalSpecies} onChange={update('animalSpecies')} aria-label="Especie">
+            <option>Perro</option>
+            <option>Gato</option>
+            <option>Conejo</option>
+            <option>Ave</option>
+            <option>Exótico</option>
+          </select>
+        </div>
+        <textarea value={form.reason} onChange={update('reason')} placeholder="Motivo de consulta" />
+        <button className="button primary" disabled={submitting || loading} type="submit">{submitting ? 'Registrando...' : 'Registrar turno'}</button>
+        {status && <p className="form-status">{status}</p>}
+      </form>
+    </section>
+  );
+}
+
+function formatSlotDate(value: string) {
+  return new Intl.DateTimeFormat('es-AR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
 function App() {
   const roi = useMemo(() => ({
     noShow: '18%',
@@ -243,14 +342,7 @@ function App() {
           ))}
         </div>
       </section>
-      <section id="demo" className="section lead">
-        <div><p className="eyebrow">Demo</p><h2>Una institución funcionando.</h2></div>
-        <div className="demo-panel">
-          <h3>Próximos turnos y alertas</h3>
-          {demoAlerts.map(([time, item, status]) => <p key={item}><b>{time}</b><span>{item}</span><em>{status}</em></p>)}
-        </div>
-        <form><input placeholder="Nombre" /><input placeholder="Email" /><textarea placeholder="Clínica, consultorio, veterinaria o diagnóstico" /><button className="button primary" type="button">Solicitar demo</button></form>
-      </section>
+      <AppointmentDemo />
       <footer>DiceHealth · Plataforma clínica sobre DiceProjects Core.</footer>
       <Copilot />
     </main>
