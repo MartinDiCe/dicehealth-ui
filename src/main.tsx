@@ -25,32 +25,32 @@ import { askPublicBot, config, publicUrl, track } from './runtime';
 type Message = { from: 'user' | 'bot'; text: string };
 
 const modules = [
-  ['Agenda clínica', 'Agenda por profesional, consultorio, especialidad, equipo, sede, confirmación, reprogramación y lista de espera.', CalendarCheck],
-  ['Pacientes', 'Ficha completa con datos, tutor/familia, cobertura, contacto, alertas, documentación y permisos.', UsersRound],
-  ['Historia clínica', 'Evoluciones, diagnósticos, indicaciones, estudios, adjuntos, imágenes, archivos y auditoría.', FileText],
-  ['Tratamientos', 'Planes, sesiones, controles, seguimiento, resultados y alta.', HeartPulse],
-  ['Medicamentos e insumos', 'Vacunas, medicamentos, dosis, vía, frecuencia, lotes, vencimientos y vínculo con stock clínico/warehouse.', Pill],
-  ['Expediente clínico', 'Historia, estudios, consentimientos, recetas, presupuestos, informes, documentos y derivaciones.', ClipboardCheck],
-  ['Scoring clínico', 'Motor configurable por riesgo, urgencia, ausentismo, prioridad y continuidad.', Activity],
-  ['Dashboard clínico', 'Pacientes atendidos, tratamientos activos, ausentismo, ocupación, profesionales y consultorios.', LineChart],
-  ['Copiloto clínico', 'Consulta pacientes pendientes, prioridad, tratamientos, disponibilidad y operación asistencial.', Bot],
+  ['Agenda', 'Turnos, equipos y confirmaciones.', CalendarCheck],
+  ['Pacientes', 'Ficha clínica y responsables.', UsersRound],
+  ['Historia', 'Evoluciones, estudios y adjuntos.', FileText],
+  ['Tratamientos', 'Planes, controles y seguimiento.', HeartPulse],
+  ['Insumos', 'Vacunas, medicación y stock.', Pill],
+  ['Expedientes', 'Documentos clínicos trazables.', ClipboardCheck],
+  ['Scoring', 'Riesgo, prioridad y ausentismo.', Activity],
+  ['Dashboard', 'Ocupación y alertas clínicas.', LineChart],
+  ['Copiloto', 'Preguntas sobre la operación.', Bot],
 ] as const;
 
 const verticals = [
-  { title: 'Clínicas y centros médicos', copy: 'Pacientes humanos, especialidades, coberturas, historia clínica, documentos y agenda por profesional.' },
-  { title: 'Consultorios y profesionales', copy: 'Agenda, ficha clínica, seguimiento, derivaciones, recordatorios y comunicación con pacientes.' },
-  { title: 'Veterinarias y hospitales veterinarios', copy: 'Tutores, pacientes animales, especies, razas, equipos, consultorios, internación y scoring de asistencia.' },
-  { title: 'Diagnóstico y rehabilitación', copy: 'Equipamiento médico, estudios, sesiones, resultados, órdenes y seguimiento por tratamiento.' },
+  { title: 'Clínicas', copy: 'Especialidades, historia y agenda.' },
+  { title: 'Consultorios', copy: 'Ficha, turnos y seguimiento.' },
+  { title: 'Veterinarias', copy: 'Tutores, animales y vacunas.' },
+  { title: 'Diagnóstico', copy: 'Equipos, estudios y resultados.' },
 ];
 
 const flows = [
-  ['Paciente', 'La operación nace en una ficha clínica completa, humana o veterinaria.'],
-  ['Turno', 'Reserva por profesional, consultorio, equipo, sede y disponibilidad.'],
-  ['Confirmación', 'Links públicos, WhatsApp/email, reprogramación y cancelación trazable.'],
-  ['Atención', 'Consulta, evolución, diagnóstico, indicaciones y documentación.'],
-  ['Tratamiento', 'Plan, sesiones, controles, seguimiento, resultados y alta.'],
-  ['Dashboard', 'Ocupación, ausentismo, pacientes pendientes y alertas clínicas.'],
-  ['Copiloto', 'Preguntas contextuales sobre prioridad, continuidad y disponibilidad.'],
+  ['Paciente', 'Ficha única.'],
+  ['Turno', 'Agenda clínica.'],
+  ['Confirmación', 'Links públicos.'],
+  ['Atención', 'Evolución y adjuntos.'],
+  ['Tratamiento', 'Seguimiento.'],
+  ['Dashboard', 'Indicadores.'],
+  ['Copiloto', 'Consulta operativa.'],
 ];
 
 const kpis = [
@@ -73,21 +73,21 @@ const publicLinks = [
   {
     title: 'Confirmar turno clínico',
     tag: 'CONFIRMACIÓN',
-    copy: 'Pantalla pública para confirmar asistencia, validar datos del responsable y dejar trazabilidad.',
+    copy: 'Asistencia, datos y trazabilidad.',
     detail: 'Lola · Control postquirúrgico · Dra. Aguirre · 09:30',
     href: publicUrl(config.confirmPath),
   },
   {
     title: 'Reconfirmar estudio',
     tag: 'EQUIPO MÉDICO',
-    copy: 'Vista para reconfirmar un estudio con preparación previa, sede, equipo asignado e instrucciones.',
+    copy: 'Preparación, sede y equipo.',
     detail: 'Simba · Ecógrafo Doppler · Hospital Norte · 10:30',
     href: publicUrl(config.studyPath),
   },
   {
     title: 'Indicaciones y vacunas',
     tag: 'SEGUIMIENTO',
-    copy: 'Link de seguimiento clínico con recomendaciones, medicación indicada y próximas vacunas.',
+    copy: 'Recomendaciones y próximos pasos.',
     detail: 'Milo · Cardiología · vacunas y medicación pendiente',
     href: publicUrl(config.followUpPath),
   },
@@ -130,7 +130,7 @@ function Copilot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { from: 'bot', text: 'Soy el copiloto de DiceHealth. Preguntame por pacientes, tutores, agenda clínica, historia, scoring o veterinaria.' },
+    { from: 'bot', text: 'Preguntame por pacientes, agenda, historia o scoring.' },
   ]);
   const prompts = ['¿Cómo manejo tutores y pacientes?', '¿Qué mide el scoring?', '¿Cómo funciona la agenda clínica?'];
   const send = (text: string) => {
@@ -177,10 +177,11 @@ function App() {
       </nav>
       <section id="inicio" className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">PLATAFORMA CLÍNICA · DICEPROJECTS CORE</p>
-          <h1>La Plataforma de Gestión Clínica para instituciones de salud.</h1>
-          <p>Centralizá pacientes, agenda, historia clínica, tratamientos, expedientes y seguimiento clínico desde una única plataforma con IA, automatizaciones e integración completa.</p>
-          <div className="actions"><a className="button primary" href="#demo" onClick={() => track('CLICK', { actionCode: 'dicehealth_cta_demo', actionLabel: 'Ver demo', category: 'CTA' })}>Ver demo <ArrowRight size={18} /></a><a className="button secondary" href="#modulos" onClick={() => track('CLICK', { actionCode: 'dicehealth_cta_modules', actionLabel: 'Ver módulos', category: 'CTA' })}>Ver módulos</a></div>
+          <p className="eyebrow">DiceProjects Core · Salud</p>
+          <h1>Gestión clínica conectada.</h1>
+          <p>Pacientes, agenda, historia, tratamientos y seguimiento en una sola operación.</p>
+          <div className="hero-tags"><span>Humana</span><span>Veterinaria</span><span>Multi sede</span><span>IA clínica</span></div>
+          <div className="actions"><a className="button primary" href="#demo" onClick={() => track('CLICK', { actionCode: 'dicehealth_cta_demo', actionLabel: 'Ver demo', category: 'CTA' })}>Ver demo <ArrowRight size={18} /></a><a className="button secondary" href="#modulos" onClick={() => track('CLICK', { actionCode: 'dicehealth_cta_modules', actionLabel: 'Ver módulos', category: 'CTA' })}>Módulos</a></div>
         </div>
         <div className="clinical-board">
           <div className="board-head"><Stethoscope /><span>Agenda clínica</span><b>Hoy</b></div>
@@ -189,19 +190,19 @@ function App() {
       </section>
       <section className="kpis">{kpis.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</section>
       <section id="modulos" className="section">
-        <div className="section-title"><p className="eyebrow">GESTIÓN CLÍNICA COMPLETA</p><h2>No es un turnero ni una historia clínica aislada.</h2><p>DiceHealth administra el ciclo completo de atención: paciente, turno, confirmación, atención, historia clínica, tratamiento, seguimiento, dashboard y copiloto clínico.</p></div>
+        <div className="section-title compact"><p className="eyebrow">Módulos</p><h2>Todo el circuito clínico.</h2></div>
         <div className="cards">{modules.map(([title, copy, Icon]) => <article key={title}><Icon /><h3>{title}</h3><p>{copy}</p></article>)}</div>
       </section>
       <section id="verticales" className="section split">
-        <div><p className="eyebrow">SEGMENTACIÓN REAL</p><h2>El usuario elige si atiende humanos, animales o ambos con reglas claras.</h2><p>Los datos base humanos y veterinarios no se mezclan. La plataforma comparte Core, pero cada vertical carga pacientes, responsables, agenda, estudios y documentos según su operación.</p></div>
+        <div><p className="eyebrow">Verticales</p><h2>Una base. Distintos modelos de atención.</h2></div>
         <div className="verticals">{verticals.map((item) => <article key={item.title}><ShieldCheck /><h3>{item.title}</h3><p>{item.copy}</p></article>)}</div>
       </section>
       <section id="core" className="section core-panel">
-        <div className="section-title"><p className="eyebrow">CONSTRUIDO SOBRE DICEPROJECTS CORE</p><h2>Un Core común para operar instituciones, permisos, datos e inteligencia.</h2><p>DiceHealth hereda las capacidades transversales de la plataforma y las aplica al modelo clínico/asistencial.</p></div>
+        <div className="section-title compact"><p className="eyebrow">Core</p><h2>La capa operativa de DiceProjects.</h2></div>
         <div className="core-list">{coreCapabilities.map((item) => <span key={item}><ShieldCheck size={16} /> {item}</span>)}</div>
       </section>
       <section id="dashboard" className="section dashboard">
-        <div><p className="eyebrow">DASHBOARD DE SALUD</p><h2>Indicadores para dirigir la operación clínica.</h2><p>Ausentismo, ocupación, tratamientos activos, pacientes en seguimiento, disponibilidad profesional y uso de equipamiento.</p></div>
+        <div><p className="eyebrow">Dashboard</p><h2>La operación en vivo.</h2></div>
         <div className="metrics">
           <article><LineChart /><strong>-{roi.noShow}</strong><span>inasistencias con confirmación</span></article>
           <article><CalendarCheck /><strong>+{roi.occupancy}</strong><span>ocupación de agenda</span></article>
@@ -210,14 +211,13 @@ function App() {
         </div>
       </section>
       <section className="section flows">
-        <div className="section-title"><p className="eyebrow">FLUJOS</p><h2>De la reserva al seguimiento clínico.</h2></div>
+        <div className="section-title compact"><p className="eyebrow">Flujo</p><h2>Del turno al seguimiento.</h2></div>
         <div>{flows.map(([title, copy], index) => <article key={title}><b>{index + 1}</b><h3>{title}</h3><p>{copy}</p></article>)}</div>
       </section>
       <section className="section kb-strip">
         <article>
-          <p className="eyebrow">KB PARA COPILOTO</p>
-          <h2>Experto en operación de salud.</h2>
-          <p>La base del copiloto entiende salud humana, veterinaria, tutores, pacientes, historia clínica, agenda, equipos, scoring y permisos.</p>
+          <p className="eyebrow">Copiloto</p>
+          <h2>IA con contexto clínico.</h2>
         </article>
         <div className="kb-list">
           <span><UsersRound size={18} /> Pacientes, tutores, animales e hijos.</span>
@@ -229,9 +229,8 @@ function App() {
       </section>
       <section id="links" className="section public-links">
         <div className="section-title">
-          <p className="eyebrow">LINKS PÚBLICOS DEMO</p>
-          <h2>Confirmaciones clínicas sin exponer el backoffice.</h2>
-          <p>Estos accesos representan lo que recibe un tutor, paciente o responsable para confirmar turno, reconfirmar estudios y revisar indicaciones de seguimiento.</p>
+          <p className="eyebrow">Links públicos</p>
+          <h2>Confirmaciones sin backoffice.</h2>
         </div>
         <div className="link-grid">
           {publicLinks.map((item) => (
@@ -245,14 +244,14 @@ function App() {
         </div>
       </section>
       <section id="demo" className="section lead">
-        <div><p className="eyebrow">DATOS DEMO</p><h2>Una institución funcionando, nunca una pantalla vacía.</h2><p>Profesionales médicos, odontólogos, psicólogos y veterinarios; pacientes adultos, niños y mascotas; tratamientos de ortodoncia, kinesiología, vacunación, psicología y rehabilitación.</p></div>
+        <div><p className="eyebrow">Demo</p><h2>Una institución funcionando.</h2></div>
         <div className="demo-panel">
           <h3>Próximos turnos y alertas</h3>
           {demoAlerts.map(([time, item, status]) => <p key={item}><b>{time}</b><span>{item}</span><em>{status}</em></p>)}
         </div>
-        <form><input placeholder="Nombre" /><input placeholder="Email" /><textarea placeholder="Contanos si es clínica, consultorio, veterinaria o centro de diagnóstico" /><button className="button primary" type="button">Solicitar demo</button></form>
+        <form><input placeholder="Nombre" /><input placeholder="Email" /><textarea placeholder="Clínica, consultorio, veterinaria o diagnóstico" /><button className="button primary" type="button">Solicitar demo</button></form>
       </section>
-      <footer>DiceHealth no es un sistema de turnos. Es una Plataforma de Gestión Clínica sobre DiceProjects Core.</footer>
+      <footer>DiceHealth · Plataforma clínica sobre DiceProjects Core.</footer>
       <Copilot />
     </main>
   );
