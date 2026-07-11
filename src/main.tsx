@@ -161,6 +161,7 @@ function Copilot() {
 }
 
 function AppointmentDemo() {
+  const [careMode, setCareMode] = useState<'veterinary' | 'human'>('veterinary');
   const [slots, setSlots] = useState<DemoAppointmentSlot[]>([]);
   const [selectedSlotId, setSelectedSlotId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -174,6 +175,29 @@ function AppointmentDemo() {
     animalSpecies: 'Perro',
     reason: 'Consulta clínica',
   });
+  const modeCopy = careMode === 'veterinary'
+    ? {
+        eyebrow: 'Demo veterinaria',
+        responsable: 'Tutor responsable',
+        patient: 'Animal / paciente',
+        species: ['Perro', 'Gato', 'Conejo', 'Ave', 'Exótico'],
+        note: 'El tutor queda como contacto y el animal viaja como paciente clínico.',
+      }
+    : {
+        eyebrow: 'Demo salud humana',
+        responsable: 'Responsable / paciente',
+        patient: 'Paciente',
+        species: ['Adulto', 'Menor', 'Control', 'Primera vez', 'Estudio'],
+        note: 'El responsable queda como contacto y el paciente viaja en la reserva clínica.',
+      };
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      animalSpecies: careMode === 'veterinary' ? 'Perro' : 'Adulto',
+      reason: careMode === 'veterinary' ? 'Consulta clínica' : 'Consulta médica',
+    }));
+  }, [careMode]);
 
   useEffect(() => {
     let alive = true;
@@ -199,54 +223,91 @@ function AppointmentDemo() {
       return;
     }
     setSubmitting(true);
-    const result = await requestDemoAppointment({ slot: selectedSlot, ...form });
+    const result = await requestDemoAppointment({
+      slot: selectedSlot,
+      ...form,
+      animalSpecies: careMode === 'veterinary' ? form.animalSpecies : `Humana · ${form.animalSpecies}`,
+      reason: `${careMode === 'veterinary' ? 'Veterinaria' : 'Salud humana'} · ${form.reason}`,
+    });
     setStatus(result.message);
     setSubmitting(false);
   };
 
   return (
     <section id="demo" className="section lead">
-      <div>
-        <p className="eyebrow">Demo veterinaria</p>
-        <h2>Turnos futuros para probar el flujo.</h2>
-        <p>El tutor queda como contacto de la reserva y el animal viaja en metadata clínica para completar el paciente en Salud.</p>
+      <div className="lead-sidebar">
+        <p className="eyebrow">{modeCopy.eyebrow}</p>
+        <h2>Reservar un turno.</h2>
+        <p>{modeCopy.note}</p>
+        <div className="mode-switch" aria-label="Tipo de entidad">
+          <button className={careMode === 'veterinary' ? 'active' : ''} type="button" onClick={() => setCareMode('veterinary')}>Animal</button>
+          <button className={careMode === 'human' ? 'active' : ''} type="button" onClick={() => setCareMode('human')}>Humana</button>
+        </div>
+        <ol className="booking-steps">
+          <li><b>1</b><span>Elegí un horario futuro.</span></li>
+          <li><b>2</b><span>Cargá responsable y paciente.</span></li>
+          <li><b>3</b><span>La reserva llega a Agenda.</span></li>
+        </ol>
       </div>
       <div className="demo-panel appointment-panel">
-        <h3>Disponibilidad</h3>
+        <header className="panel-head">
+          <h3>Disponibilidad</h3>
+          <span>{slots.length || '-'} turnos</span>
+        </header>
         {loading && <p className="plain-row">Cargando agenda...</p>}
-        {!loading && slots.map((slot) => (
-          <button
-            className={slot.id === selectedSlotId ? 'appointment-slot active' : 'appointment-slot'}
-            key={slot.id}
-            type="button"
-            onClick={() => setSelectedSlotId(slot.id)}
-          >
-            <b>{formatSlotDate(slot.startsAt)}</b>
-            <span>{slot.serviceName}<small>{slot.resourceName}</small></span>
-            <em>{slot.source === 'api' ? 'SALUD' : 'Demo'}</em>
-          </button>
-        ))}
+        <div className="slot-list">
+          {!loading && slots.map((slot) => (
+            <button
+              className={slot.id === selectedSlotId ? 'appointment-slot active' : 'appointment-slot'}
+              key={slot.id}
+              type="button"
+              onClick={() => setSelectedSlotId(slot.id)}
+            >
+              <b>{formatSlotDay(slot.startsAt)}<small>{formatSlotHour(slot.startsAt)}</small></b>
+              <span>{slot.serviceName}<small>{slot.resourceName}</small></span>
+              <em>{slot.source === 'api' ? 'SALUD' : 'Demo'}</em>
+            </button>
+          ))}
+        </div>
       </div>
       <form onSubmit={submit}>
-        <input value={form.tutorName} onChange={update('tutorName')} placeholder="Tutor responsable" autoComplete="name" />
-        <input value={form.tutorEmail} onChange={update('tutorEmail')} placeholder="Email del tutor" type="email" autoComplete="email" />
+        {selectedSlot && (
+          <div className="selected-slot">
+            <span>Turno seleccionado</span>
+            <strong>{formatSlotDate(selectedSlot.startsAt)}</strong>
+            <small>{selectedSlot.serviceName} · {selectedSlot.resourceName}</small>
+          </div>
+        )}
+        <input value={form.tutorName} onChange={update('tutorName')} placeholder={modeCopy.responsable} autoComplete="name" />
+        <input value={form.tutorEmail} onChange={update('tutorEmail')} placeholder="Email de contacto" type="email" autoComplete="email" />
         <input value={form.tutorPhone} onChange={update('tutorPhone')} placeholder="Teléfono" autoComplete="tel" />
         <div className="form-grid">
-          <input value={form.animalName} onChange={update('animalName')} placeholder="Paciente / animal" />
+          <input value={form.animalName} onChange={update('animalName')} placeholder={modeCopy.patient} />
           <select value={form.animalSpecies} onChange={update('animalSpecies')} aria-label="Especie">
-            <option>Perro</option>
-            <option>Gato</option>
-            <option>Conejo</option>
-            <option>Ave</option>
-            <option>Exótico</option>
+            {modeCopy.species.map((item) => <option key={item}>{item}</option>)}
           </select>
         </div>
         <textarea value={form.reason} onChange={update('reason')} placeholder="Motivo de consulta" />
-        <button className="button primary" disabled={submitting || loading} type="submit">{submitting ? 'Registrando...' : 'Registrar turno'}</button>
+        <button className="button primary" disabled={submitting || loading} type="submit">{submitting ? 'Reservando...' : 'Reservar turno'}</button>
         {status && <p className="form-status">{status}</p>}
       </form>
     </section>
   );
+}
+
+function formatSlotDay(value: string) {
+  return new Intl.DateTimeFormat('es-AR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+  }).format(new Date(value));
+}
+
+function formatSlotHour(value: string) {
+  return new Intl.DateTimeFormat('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
 }
 
 function formatSlotDate(value: string) {
